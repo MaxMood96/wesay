@@ -189,6 +189,8 @@
 	<Target Name="PrepareRedistributables" >
 		<PropertyGroup>
 			<WixLibsDir>$(RootDir)/../genericinstaller/libs</WixLibsDir>
+			<!-- When changing this, be sure to delete the previous ChorusMergeModule manually, as normal cleanup doesn't affect generated files within sub-repo's. -->
+			<ChorusMergeModuleVersion>5.0.0-beta.20</ChorusMergeModuleVersion>
 		</PropertyGroup>
 		<ItemGroup>
 			<OverrideFiles Include="$(RootDir)/../src/Installer/*.wxi" />
@@ -203,7 +205,8 @@
 			LocalFilename="$(WixLibsDir)/vcredist_2012_x86.exe" />	<!-- VisualC++ 11 runtime -->
 		<DownloadFileOnce Address="https://download.microsoft.com/download/0/5/6/056dcda9-d667-4e27-8001-8a0c6971d6b1/vcredist_x86.exe"
 			LocalFilename="$(WixLibsDir)/vcredist_2013_x86.exe" />	<!-- VisualC++ 12 runtime -->
-		<DownloadFileOnce Address="https://build.palaso.org/guestAuth/repository/download/Chorus_Win32masterContinuous/latest.lastSuccessful/ChorusMergeModule.msm?branch=%3Cdefault%3E"
+		<!-- This needs to work in tandem with Installer.wxs to install the full set of dependencies. -->
+		<DownloadFileOnce Address="https://build.palaso.org/guestAuth/repository/download/Chorus_Win32masterContinuous/$(ChorusMergeModuleVersion)/ChorusMergeModule.msm?branch=%3Cdefault%3E"
 			LocalFileName="$(WixLibsDir)/ChorusMergeModule.msm" />
 		<Copy SourceFiles="@(OverrideFiles)" OverwriteReadonlyFiles="true" DestinationFolder="$(OverridesDestDir)"/>
 	</Target>
@@ -305,11 +308,11 @@
 		<PropertyGroup>
 			<MsiFile>$(SafeApplicationName)_$(BuildVersion).msi</MsiFile>
 			<BaseBuildDir>$(RootDir)/../genericinstaller/BaseInstallerBuild</BaseBuildDir>
-			<BaseBuildArgs>"$(ProductName)" $(SafeApplicationName) $(BuildVersion) $(ProductIdGuid) $(UpgradeCodeGuid) "$(AppBuildDir)/$(BinDirSuffix)" "$(AppBuildDir)/$(DataDirSuffix)" $(CopyrightYear) "$(Manufacturer)" "x86" "$(CertPath)" "@(CertPass)"</BaseBuildArgs>
+			<BaseBuildArgs>"$(ProductName)" $(SafeApplicationName) $(BuildVersion) $(ProductIdGuid) $(UpgradeCodeGuid) "$(AppBuildDir)/$(BinDirSuffix)" "$(AppBuildDir)/$(DataDirSuffix)" $(CopyrightYear) "$(Manufacturer)" -arch "x86"</BaseBuildArgs>
 		</PropertyGroup>
 		<!-- Suppress ICE30 because we install the specific version of AutoFac that we need and not the Chorus Merge Module version -->
 		<!-- Since Chorus does have one, we end up with an ICE warning for double ref counting -->
-		<Exec WorkingDirectory="$(BaseBuildDir)" Command="(set SuppressICE=-sice:ICE30) &amp; buildBaseInstaller.bat $(BaseBuildArgs)" />
+		<Exec WorkingDirectory="$(BaseBuildDir)" Command="(set SuppressICE=-sice:ICE30) &amp; (set FILESTOSIGNLATER=$(MsiFile)) &amp; buildBaseInstaller.bat $(BaseBuildArgs)" />
 
 		<ItemGroup>
 			<InstallerFiles Include="$(BaseBuildDir)/**/$(SafeApplicationName)_*.exe"/>
@@ -327,7 +330,7 @@
 		<PropertyGroup>
 			<MspFile>$(SafeApplicationName)_$(BuildVersion).msp</MspFile>
 			<PatchDir>$(RootDir)/$(SafeApplicationName)/WixInstaller/CreateUpdatePatch</PatchDir>
-			<PatchArgs>"$(ProductName)$(SafeApplicationName)" $(SafeApplicationName) $(BaseVersion) $(BuildVersion) "$(AppBuildMasterDir)/$(BinDirSuffix)" "$(AppBuildDir)/$(BinDirSuffix)" "$(AppBuildMasterDir)/$(DataDirSuffix)" "$(AppBuildDir)/$(DataDirSuffix)" $(ProductIdGuid) $(UpgradeCodeGuid) $(CompGGS) "$(Manufacturer)" "$(CertPath)" "@(CertPass)"</PatchArgs>
+			<PatchArgs>"$(ProductName)$(SafeApplicationName)" $(SafeApplicationName) $(BaseVersion) $(BuildVersion) "$(AppBuildMasterDir)/$(BinDirSuffix)" "$(AppBuildDir)/$(BinDirSuffix)" "$(AppBuildMasterDir)/$(DataDirSuffix)" "$(AppBuildDir)/$(DataDirSuffix)" $(ProductIdGuid) $(UpgradeCodeGuid) $(CompGGS) "$(Manufacturer)"</PatchArgs>
 		</PropertyGroup>
 
 		<Exec WorkingDirectory="$(PatchDir)" Command="buildPatch.bat $(PatchArgs)"/>
